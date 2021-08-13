@@ -1,0 +1,138 @@
+
+CLASS 2
+//Diamond ques using signals
+Client
+
+# include<bits/stdc++.h>
+# include<unistd.h>
+# include<ctype.h>
+# include<sys/ipc.h>
+# include<sys/shm.h>
+# include<sys/signal.h>
+# include<sys/types.h>
+# include<wait.h>
+using namespace std;
+
+int a[4]={};
+int shmid,*arr;
+
+void s1(int sno)
+{
+	cout<<"client pls update x"<<endl;
+	signal(SIGUSR1,s1);
+}
+
+void s2(int sno)
+{
+	cout<<"server pls update y"<<endl;
+	signal(SIGUSR2,s2);
+}
+
+int main()
+{
+	signal(SIGUSR1,s1);
+	signal(SIGUSR2,s2);
+	sigset_t myset;
+	(void) sigemptyset(&myset);
+
+        int id,*x,*y,*p,*q;
+        key_t key = ftok(".",12345);
+        shmid = shmget(key,sizeof(a),IPC_CREAT|0666);
+        if(shmid == -1) shmget(key,sizeof(a),0666);
+
+        arr = (int*) shmat(shmid,NULL,0);
+
+        x = arr;
+        y = arr+1;
+	p = arr+2;
+	q = arr+3;
+
+	*x = 2;
+	*y = 3;
+	*q = getpid();
+	
+        while(1)
+        {
+		(void) sigsuspend(&myset);
+		//pause();
+		//while(1)
+		//{                
+			*x=*y+1;
+			cout<<*x<<endl;
+			sleep(0.5);
+			kill(*p,SIGUSR2);
+		//}
+		
+        }
+
+        shmdt(arr);
+        return 0;
+}
+-------------------------------------------------------------------
+
+Server
+
+# include<bits/stdc++.h>
+# include<unistd.h>
+# include<ctype.h>
+# include<sys/ipc.h>
+# include<sys/shm.h>
+# include<sys/signal.h>
+# include<sys/types.h>
+# include<wait.h>
+using namespace std;
+
+int a[4]={};
+int shmid,*arr;
+
+void s1(int sno)
+{
+	cout<<"client pls update x"<<endl;
+	signal(SIGUSR1,s1);
+}
+
+void s2(int sno)
+{
+	cout<<"server pls update y"<<endl;
+	signal(SIGUSR2,s2);
+}
+
+int main()
+{
+	signal(SIGUSR1,s1);
+	signal(SIGUSR2,s2);
+	sigset_t myset;
+	(void) sigemptyset(&myset);
+
+        int id,*x,*y,*p,*q;
+        key_t key = ftok(".",12345);
+        shmid = shmget(key,sizeof(a),IPC_CREAT|0666);
+        if(shmid == -1) shmget(key,sizeof(a),0666);
+
+        arr = (int*) shmat(shmid,NULL,0);
+
+        x = arr;
+        y = arr+1;
+	p = arr+2;
+	q = arr+3;
+
+	*x = 2;
+	*y = 3;
+	*p = getpid();
+	
+        while(1)
+        {
+		//while(1)
+		//{                
+			*y=*x+1;
+			cout<<*y<<endl;
+			sleep(0.5);
+			kill(*q,SIGUSR1);
+		//}
+		//pause();
+		(void) sigsuspend(&myset);
+        }
+
+        shmdt(arr);
+        return 0;
+}
